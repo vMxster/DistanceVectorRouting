@@ -1,0 +1,208 @@
+\documentclass[a4paper,12pt]{article}
+
+% Pacchetti
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[italian]{babel}
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{csquotes}
+\usepackage{url}
+\usepackage{setspace}
+
+% Impostazioni della pagina
+\geometry{left=3cm, right=3cm, top=2.5cm, bottom=2.5cm}
+\setlength{\parskip}{0.5em}
+\onehalfspacing
+
+% Impostazioni dell'intestazione e del piè di pagina
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Simulazione del Protocollo di Routing}
+\rhead{Relazione Finale}
+\cfoot{\thepage}
+
+% Definizione dello stile per il codice
+\lstdefinestyle{mystyle}{
+	backgroundcolor=\color{white},
+	commentstyle=\color{gray},
+	keywordstyle=\color{blue},
+	numberstyle=\tiny\color{gray},
+	stringstyle=\color{red},
+	basicstyle=\ttfamily\footnotesize,
+	breaklines=true,
+	captionpos=b,
+	keepspaces=true,
+	numbers=left,
+	numbersep=5pt,
+	showspaces=false,
+	showstringspaces=false,
+	showtabs=false,
+	tabsize=2,
+	frame=single,
+	language=Python
+}
+\lstset{style=mystyle}
+
+% Titolo e autore
+\title{\textbf{Simulazione del Protocollo Distance Vector Routing}}
+\author{Martin Tomassi \\ 0001077737}
+\date{\today}
+
+\begin{document}
+	
+	\maketitle
+	
+	\begin{abstract}
+		In questa relazione viene presentata la progettazione e l'implementazione di uno script Python per la simulazione del protocollo Distance Vector Routing (DVR). L'obiettivo principale è stato quello di creare un ambiente di simulazione che permettesse di analizzare il comportamento del protocollo, con particolare attenzione all'implementazione dello Split Horizon per prevenire loop di routing. Vengono discussi in dettaglio l'architettura del sistema, le funzionalità implementate e i risultati ottenuti attraverso test approfonditi.
+	\end{abstract}
+	
+	\tableofcontents
+	\newpage
+	
+	\section{Introduzione}
+	
+	L'obiettivo di questo progetto è stato lo sviluppo di uno script Python che simuli il funzionamento del protocollo \textit{Distance Vector Routing} (DVR), consentendo l'analisi dettagliata del comportamento del protocollo in diverse condizioni di rete e l'osservazione degli effetti di meccanismi come lo Split Horizon.
+	
+	\section{Obiettivi del Progetto}
+	
+	Il progetto si è prefissato i seguenti obiettivi specifici:
+	
+	\begin{itemize}
+		\item \textbf{Implementazione del Protocollo DVR}: Realizzare una simulazione accurata del protocollo Distance Vector Routing utilizzando il linguaggio di programmazione Python.
+		\item \textbf{Gestione Dinamica delle Tabelle di Routing}: Consentire l'aggiornamento dinamico delle tabelle di routing per ogni nodo.
+		\item \textbf{Calcolo dei Percorsi Ottimali}: Utilizzare l'algoritmo di Bellman-Ford per determinare le rotte più brevi tra i nodi della rete.
+		\item \textbf{Interfaccia Utente Interattiva}: Fornire un'interfaccia a linea di comando che permetta all'utente di interagire con la simulazione, monitorare lo stato della rete ed eseguire operazioni specifiche.
+		\item \textbf{Implementazione dello Split Horizon}: Integrare meccanismi avanzati come lo Split Horizon per prevenire problemi di routing quali i loop infiniti.
+		\item \textbf{Robustezza e Gestione degli Errori}: Assicurare la stabilità dello script attraverso una gestione efficace degli errori e una valida\-zione accurata degli input.
+	\end{itemize}
+	
+	\section{Architettura del Sistema}
+	
+	\subsection{Struttura Generale}
+	
+	Lo script è strutturato in moduli distinti che gestiscono le diverse componenti del sistema:
+	
+	\begin{itemize}
+		\item \textbf{Parsing degli Argomenti}: Utilizza il modulo \texttt{argparse} per gestire gli argomenti passati da linea di comando, consentendo all'utente di specificare il file CSV contenente la topologia della rete.
+		\item \textbf{Gestione del Grafo}: Si avvale della libreria \texttt{NetworkX} per rappresentare la rete come un grafo non orientato ponderato, dove i nodi corrispondono ai router e gli archi rappresentano i collegamenti con i relativi costi.
+		\item \textbf{Tabelle di Routing}: Ogni nodo possiede una istanza della classe \texttt{RoutingTable}, che mantiene le informazioni sulle rotte verso gli altri nodi, includendo il costo e il prossimo salto (\textit{next hop}).
+		\item \textbf{Algoritmo di Bellman-Ford}: L'algoritmo è implementato nella funzione \texttt{bellman\_ford\_iteration}, che aggiorna le tabelle di routing basandosi sulle informazioni ricevute dai nodi adiacenti.
+		\item \textbf{Split Horizon}: La funzionalità dello Split Horizon è integrata nel sistema e può essere attivata o disattivata dall'utente durante l'esecuzione, influenzando il comportamento dell'algoritmo di aggiornamento.
+		\item \textbf{Interfaccia Utente}: Un'interfaccia a linea di comando permette all'utente di interagire con la simulazione, eseguendo comandi per visualizzare le tabelle di routing, calcolare percorsi, eseguire iterazioni dell'algoritmo e modificare le impostazioni.
+		\item \textbf{Gestione degli Errori}: Lo script include meccanismi per la validazione degli input e gestisce le eccezioni comuni, garantendo una maggiore robustezza.
+	\end{itemize}
+	
+	\subsection{Implementazione delle Tabelle di Routing}
+	
+	La classe \texttt{RoutingTable} è responsabile della gestione delle tabelle di routing per ogni nodo. Ogni istanza della classe contiene:
+	
+	\begin{itemize}
+		\item \textbf{Nodo Destinazione}: Il nodo verso cui la rotta è diretta.
+		\item \textbf{Costo}: Il costo stimato per raggiungere il nodo di destinazione.
+		\item \textbf{Prossimo Nodo (\textit{Next Hop})}: Il nodo adiacente attraverso cui inoltrare i pacchetti per raggiungere la destinazione.
+	\end{itemize}
+	
+	L'inizializzazione delle tabelle di routing assegna un costo zero verso sé stessi, i costi diretti verso i nodi adiacenti e un costo infinito verso gli altri nodi.
+	
+	\subsection{Algoritmo di Bellman-Ford}
+	
+	L'algoritmo di Bellman-Ford è implementato per aggiornare iterativamente le tabelle di routing:
+	
+	\begin{enumerate}
+		\item Ogni nodo condivide la propria tabella di routing con i nodi adiacenti.
+		\item Per ogni destinazione, i nodi calcolano il costo totale attraverso ogni vicino.
+		\item Se viene trovato un percorso con costo inferiore, la tabella di routing viene aggiornata con il nuovo costo e il prossimo salto.
+	\end{enumerate}
+	
+	La funzione \texttt{bellman\_ford\_iteration} esegue un'iterazione completa dell'algoritmo per tutti i nodi.
+	
+	\subsection{Implementazione dello Split Horizon}
+	
+	Lo Split Horizon è integrato nella funzione \texttt{bellman\_ford\_iteration} e può essere attivato tramite una variabile globale \texttt{SPLIT\_HORIZON}. Quando attivo, il meccanismo evita di considerare percorsi che ritornerebbero al nodo mittente, prevenendo così possibili loop di routing.
+	
+	\subsection{Gestione degli Errori e Validazione}
+	
+	Lo script effettua controlli su:
+	
+	\begin{itemize}
+		\item \textbf{Archi con Peso Negativo}: Interrompe l'esecuzione se vengono rilevati, poiché non supportati dall'algoritmo.
+		\item \textbf{Input dell'Utente}: Valida i comandi e i parametri inseriti, assicurandosi che i nodi esistano e che gli argomenti siano corretti.
+		\item \textbf{Eccezioni}: Gestisce eccezioni durante la lettura del file CSV e l'elaborazione dei dati.
+	\end{itemize}
+	
+	\section{Funzionalità Implementate}
+	
+	\subsection{Gestione della Topologia della Rete}
+	
+	Il file CSV utilizzato come input definisce i nodi e gli archi della rete. Ad esempio:
+	
+	\begin{lstlisting}[language={}, caption={Esempio di file CSV per la rete}, float]
+		# Nodi
+		R1,R2,R3,R4,R5,R6
+		
+		# Archi con Peso
+		R1,R2,1
+		R1,R3,6
+		R2,R3,2
+		R3,R4,3
+		R4,R5,2
+		R2,R4,6
+	\end{lstlisting}
+	
+	Lo script legge il file e costruisce il grafo corrispondente utilizzando \texttt{NetworkX}.
+	
+	\subsection{Interfaccia Utente Interattiva}
+	
+	L'interfaccia a linea di comando offre i seguenti comandi:
+	
+	\begin{itemize}
+		\item \textbf{help}: Visualizza il menu dei comandi disponibili.
+		\item \textbf{show-table <nodo>/all}: Mostra la tabella di routing per il nodo specificato o per tutti i nodi.
+		\item \textbf{shortest-path <nodo1> <nodo2>}: Calcola e visualizza il percorso più breve tra due nodi.
+		\item \textbf{update-tables <n>/stable}: Esegue un numero specificato di iterazioni dell'algoritmo o fino alla stabilità.
+		\item \textbf{toggle-split-horizon}: Attiva o disattiva lo Split Horizon.
+		\item \textbf{exit}: Termina la simulazione.
+	\end{itemize}
+	
+	\subsection{Esecuzione dello Script}
+	
+	Per eseguire lo script:
+	
+	\begin{lstlisting}[language=bash, caption={Esecuzione dello script}]
+		python3 routing_simulation.py -f network.csv
+	\end{lstlisting}
+	
+	Una volta avviato, l'utente può interagire utilizzando i comandi descritti.
+	
+	\section{Risultati e Test}
+	
+	\subsection{Test di Funzionalità}
+	
+	Sono stati condotti test per verificare la corretta inizializzazione delle tabelle di routing e l'aggiornamento attraverso l'algoritmo di Bellman-Ford.
+	
+	\subsection{Verifica della Convergenza}
+	
+	Eseguendo l'algoritmo fino alla stabilità, si è osservato che le tabelle di routing convergono correttamente, riflettendo i percorsi ottimali tra i nodi.
+	
+	\subsection{Effetto dello Split Horizon}
+	
+	Attivando lo Split Horizon, i test hanno mostrato una riduzione dei tempi di convergenza e l'eliminazione di possibili loop di routing, confermando l'efficacia del meccanismo.
+	
+	\subsection{Gestione degli Errori}
+	
+	Inserendo archi con peso negativo e comandi non validi, lo script ha risposto adeguatamente, segnalando gli errori e prevenendo comportamenti indesiderati.
+	
+	\section{Conclusioni}
+	
+	Il progetto ha permesso di implementare con successo una simulazione del protocollo Distance Vector Routing, fornendo uno strumento utile per l'analisi dei meccanismi di routing. L'integrazione dello Split Horizon e una gestione robusta degli errori hanno migliorato l'affidabilità e l'efficacia della simulazione.
+	
+\end{document}
